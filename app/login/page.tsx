@@ -19,8 +19,8 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // Redirect ke home page setelah login sukses
-            window.location.href = "/";
+            // Redirect ke dashboard
+            window.location.href = "/home";
         } catch (err: unknown) {
             if (err instanceof Error) {
                 alert(err.message);
@@ -28,7 +28,6 @@ export default function LoginPage() {
                 alert("Login failed!");
             }
         }
-
         setLoading(false);
     };
 
