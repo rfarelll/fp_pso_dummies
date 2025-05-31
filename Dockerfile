@@ -10,7 +10,7 @@ RUN npm install --legacy-peer-deps
 
 # Copy the rest of your application code
 COPY . .
-COPY .env .env
+# COPY .env .env
 
 # Build the Next.js app
 RUN npm run build
