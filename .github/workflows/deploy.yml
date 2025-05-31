@@ -1,0 +1,43 @@
+name: CD - Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: unified-runner-461212-q5
+      REGION: asia-southeast2
+      SERVICE: dooit-app-dummy
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }} .
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 3000
