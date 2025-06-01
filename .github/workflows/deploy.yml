@@ -36,9 +36,6 @@ jobs:
       - name: Build and Push Docker image with Buildx
         run: |
           docker buildx build \
-            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
-            --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:latest \
-            --push \
             .
 
       - name: Push Docker image to GCR
