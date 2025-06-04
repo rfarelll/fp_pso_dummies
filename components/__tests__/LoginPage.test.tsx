@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import LoginPage from '@/app/login/page'
-import '@testing-library/jest-dom'
-import { signInWithEmailAndPassword } from "firebase/auth"
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import LoginPage from '@/app/login/page';
+import '@testing-library/jest-dom';
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 // Mock next/image
 jest.mock("next/image", () => {
@@ -36,25 +36,20 @@ jest.mock("firebase/auth", () => ({
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
 
+// ---- Cara paling aman untuk spy window.location.href
 let locationHref = "";
+
+beforeAll(() => {
+  jest.spyOn(window.location, "href", "set").mockImplementation((val: string) => {
+    locationHref = val;
+  });
+});
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Spy the window.location.href setter
   locationHref = "";
-  Object.defineProperty(window, "location", {
-    value: {
-      get href() {
-        return locationHref;
-      },
-      set href(val) {
-        locationHref = val;
-      }
-    },
-    writable: true,
-    configurable: true,
-  });
 });
+
 
 it("renders all input fields, button, and register link", () => {
   render(<LoginPage />);
@@ -88,7 +83,7 @@ it("calls signInWithEmailAndPassword with correct args and redirects on success"
 
   await waitFor(() => {
     expect(mockSignIn).toHaveBeenCalledWith(expect.anything(), "tes@mail.com", "abcdefg");
-    expect(locationHref).toBe("/home");
+    expect(locationHref).toBe("/home");  // ← ini sudah *jsdom-safe*
   });
 });
 
@@ -118,6 +113,6 @@ it("shows loading state when submitting", async () => {
   fireEvent.click(screen.getByRole('button', { name: /login/i }));
   expect(screen.getByRole('button', { name: /loading/i })).toBeDisabled();
 
-  // Selesaikan promise biar ga "pending" terus
+  // Selesaikan promise agar loading selesai
   resolvePromise!();
 });
