@@ -1,14 +1,17 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  preset: "ts-jest", // atau bisa dihapus kalau sudah pakai babel-jest
+  testEnvironment: "jsdom",
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
-    '^.+\\.(css|scss|sass)$': 'identity-obj-proxy'
+    "^@/(.*)$": "<rootDir>/$1",
+    // Mock file static jika butuh
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }]
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
   },
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
-  transformIgnorePatterns: ["/node_modules/(?!@fortawesome|@radix-ui)/"],
+  // Supaya semua node_modules tetap ignore kecuali @/ dan node_modules/@testing-library (optional)
+  transformIgnorePatterns: [
+    "node_modules/(?!(@testing-library|@fortawesome)/)"
+  ],
 };
