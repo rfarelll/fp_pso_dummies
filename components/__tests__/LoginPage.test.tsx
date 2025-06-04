@@ -22,6 +22,7 @@ jest.mock("next/link", () => {
 // Mock firebase/auth
 jest.mock("firebase/auth", () => ({
   signInWithEmailAndPassword: jest.fn(),
+  getAuth: jest.fn(() => ({})), // tambahkan ini!
 }));
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
