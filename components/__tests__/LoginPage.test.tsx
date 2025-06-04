@@ -19,10 +19,19 @@ jest.mock("next/link", () => {
   return NextLink;
 });
 
-// Mock firebase/auth
+jest.mock("firebase/app", () => ({
+  initializeApp: jest.fn(() => ({})),
+  getApps: jest.fn(() => []),
+  getApp: jest.fn(() => ({})),
+}));
+
+jest.mock("firebase/firestore", () => ({
+  getFirestore: jest.fn(() => ({})),
+}));
+
 jest.mock("firebase/auth", () => ({
   signInWithEmailAndPassword: jest.fn(),
-  getAuth: jest.fn(() => ({})), // tambahkan ini!
+  getAuth: jest.fn(() => ({})),
 }));
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
