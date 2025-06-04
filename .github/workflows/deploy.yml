@@ -1,22 +1,19 @@
-name: CD - Deploy to Staging
+name: CD - Deploy to GCP Cloud Run Staging
 
 on:
-  workflow_run:
-    workflows: ["CI - Test"] 
-    types:
-      - completed
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
 
 jobs:
-  deploy-staging:
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'dev'
+  deploy:
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: unified-runner-461212-q5
       REGION: asia-southeast2
-      SERVICE: dooit-staging 
-      REPOSITORY: fp-pso-dummy
+      SERVICE: dooit-app-staging         # BEDA dengan prod!
+      REPOSITORY: fp-pso-fe
 
     steps:
       - name: Checkout repo
@@ -51,7 +48,7 @@ jobs:
             --tag asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
             --push .
 
-      - name: Deploy to Cloud Run Staging
+      - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE }} \
             --image asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
