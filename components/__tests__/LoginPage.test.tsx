@@ -36,76 +36,88 @@ jest.mock("firebase/auth", () => ({
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
 
+let locationHref = "";
+
 beforeEach(() => {
   jest.clearAllMocks();
-  // @ts-expect-error: mocking window.location in Jest test
-  delete window.location;
-  // @ts-expect-error: mocking window.location in Jest test
-  window.location = { href: "" };
+  // Spy the window.location.href setter
+  locationHref = "";
+  Object.defineProperty(window, "location", {
+    value: {
+      get href() {
+        return locationHref;
+      },
+      set href(val) {
+        locationHref = val;
+      }
+    },
+    writable: true,
+    configurable: true,
+  });
 });
 
-  it("renders all input fields, button, and register link", () => {
-    render(<LoginPage />);
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-    expect(screen.getByAltText(/logo/i)).toBeInTheDocument();
-    expect(screen.getByText(/don't have an account/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /register/i })).toHaveAttribute('href', '/register');
+it("renders all input fields, button, and register link", () => {
+  render(<LoginPage />);
+  expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+  expect(screen.getByAltText(/logo/i)).toBeInTheDocument();
+  expect(screen.getByText(/don't have an account/i)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /register/i })).toHaveAttribute('href', '/register');
+});
+
+it("can type email and password", () => {
+  render(<LoginPage />);
+  const emailInput = screen.getByLabelText(/email/i);
+  const passInput = screen.getByLabelText(/password/i);
+
+  fireEvent.change(emailInput, { target: { value: "test@mail.com" } });
+  fireEvent.change(passInput, { target: { value: "12345678" } });
+
+  expect(emailInput).toHaveValue("test@mail.com");
+  expect(passInput).toHaveValue("12345678");
+});
+
+it("calls signInWithEmailAndPassword with correct args and redirects on success", async () => {
+  mockSignIn.mockResolvedValueOnce({ user: { uid: "uid123" } });
+
+  render(<LoginPage />);
+  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "tes@mail.com" } });
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "abcdefg" } });
+  fireEvent.click(screen.getByRole('button', { name: /login/i }));
+
+  await waitFor(() => {
+    expect(mockSignIn).toHaveBeenCalledWith(expect.anything(), "tes@mail.com", "abcdefg");
+    expect(locationHref).toBe("/home");
   });
+});
 
-  it("can type email and password", () => {
-    render(<LoginPage />);
-    const emailInput = screen.getByLabelText(/email/i);
-    const passInput = screen.getByLabelText(/password/i);
+it("shows alert on login failure", async () => {
+  mockSignIn.mockRejectedValueOnce(new Error("Login failed"));
+  window.alert = jest.fn();
 
-    fireEvent.change(emailInput, { target: { value: "test@mail.com" } });
-    fireEvent.change(passInput, { target: { value: "12345678" } });
+  render(<LoginPage />);
+  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "fail@mail.com" } });
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "wrongpass" } });
+  fireEvent.click(screen.getByRole('button', { name: /login/i }));
 
-    expect(emailInput).toHaveValue("test@mail.com");
-    expect(passInput).toHaveValue("12345678");
+  await waitFor(() => {
+    expect(window.alert).toHaveBeenCalledWith("Login failed");
   });
+});
 
-  it("calls signInWithEmailAndPassword with correct args and redirects on success", async () => {
-    mockSignIn.mockResolvedValueOnce({ user: { uid: "uid123" } });
+it("shows loading state when submitting", async () => {
+  let resolvePromise: () => void;
+  const fakePromise = new Promise<void>((res) => { resolvePromise = res; });
+  mockSignIn.mockImplementation(() => fakePromise);
 
-    render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "tes@mail.com" } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "abcdefg" } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+  render(<LoginPage />);
+  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "user@mail.com" } });
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "mypassword" } });
 
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith(expect.anything(), "tes@mail.com", "abcdefg");
-      expect(window.location.href).toBe("/home");
-    });
-  });
+  fireEvent.click(screen.getByRole('button', { name: /login/i }));
+  expect(screen.getByRole('button', { name: /loading/i })).toBeDisabled();
 
-  it("shows alert on login failure", async () => {
-    mockSignIn.mockRejectedValueOnce(new Error("Login failed"));
-    window.alert = jest.fn();
-
-    render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "fail@mail.com" } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "wrongpass" } });
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith("Login failed");
-    });
-  });
-
-  it("shows loading state when submitting", async () => {
-    let resolvePromise: () => void;
-    const fakePromise = new Promise<void>((res) => { resolvePromise = res; });
-    mockSignIn.mockImplementation(() => fakePromise);
-
-    render(<LoginPage />);
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "user@mail.com" } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "mypassword" } });
-
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
-    expect(screen.getByRole('button', { name: /loading/i })).toBeDisabled();
-
-    // Selesaikan promise biar ga "pending" terus
-    resolvePromise!();
-  });
+  // Selesaikan promise biar ga "pending" terus
+  resolvePromise!();
+});
