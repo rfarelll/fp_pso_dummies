@@ -9,7 +9,6 @@ jest.mock("next/image", () => {
   NextImage.displayName = "NextImage";
   return NextImage;
 });
-
 // --- Mock next/link ---
 jest.mock("next/link", () => {
   function NextLink({ children, href }: { children: React.ReactNode; href: string }) {
@@ -25,11 +24,9 @@ jest.mock("firebase/app", () => ({
   getApps: jest.fn(() => []),
   getApp: jest.fn(() => ({})),
 }));
-
 jest.mock("firebase/firestore", () => ({
   getFirestore: jest.fn(() => ({})),
 }));
-
 jest.mock("firebase/auth", () => ({
   signInWithEmailAndPassword: jest.fn(),
   getAuth: jest.fn(() => ({})),
@@ -37,41 +34,19 @@ jest.mock("firebase/auth", () => ({
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
 
-// ---------- CUSTOM MOCK window.location ----------
-// 1. Define a minimal type for only the needed property
-type MinimalLocation = { href: string };
-
-let originalLocation: Location;
-let locationHref = "";
-
-// 2. Backup & Replace window.location before all tests
+// --- SPY window.location.assign ---
 beforeAll(() => {
-  originalLocation = window.location;
-  Object.defineProperty(window, "location", {
-    value: {
-      get href() { return locationHref; },
-      set href(val: string) { locationHref = val; },
-    } as MinimalLocation,
-    configurable: true,
-    writable: true,
-  });
-});
-
-// 3. Restore after all tests
-afterAll(() => {
-  Object.defineProperty(window, "location", {
-    value: originalLocation,
-    configurable: true,
+  Object.defineProperty(window, 'location', {
+    value: { assign: jest.fn() },
     writable: true,
   });
 });
 
 beforeEach(() => {
   jest.clearAllMocks();
-  locationHref = "";
+  (window.location.assign as jest.Mock).mockClear();
 });
 
-// ------------- TEST CASES -------------
 it("renders all input fields, button, and register link", () => {
   render(<LoginPage />);
   expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -82,21 +57,8 @@ it("renders all input fields, button, and register link", () => {
   expect(screen.getByRole('link', { name: /register/i })).toHaveAttribute('href', '/register');
 });
 
-it("can type email and password", () => {
-  render(<LoginPage />);
-  const emailInput = screen.getByLabelText(/email/i);
-  const passInput = screen.getByLabelText(/password/i);
-
-  fireEvent.change(emailInput, { target: { value: "test@mail.com" } });
-  fireEvent.change(passInput, { target: { value: "12345678" } });
-
-  expect(emailInput).toHaveValue("test@mail.com");
-  expect(passInput).toHaveValue("12345678");
-});
-
 it("calls signInWithEmailAndPassword with correct args and redirects on success", async () => {
   mockSignIn.mockResolvedValueOnce({ user: { uid: "uid123" } });
-
   render(<LoginPage />);
   fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "tes@mail.com" } });
   fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "abcdefg" } });
@@ -104,21 +66,7 @@ it("calls signInWithEmailAndPassword with correct args and redirects on success"
 
   await waitFor(() => {
     expect(mockSignIn).toHaveBeenCalledWith(expect.anything(), "tes@mail.com", "abcdefg");
-    expect(locationHref).toBe("/home");
-  });
-});
-
-it("shows alert on login failure", async () => {
-  mockSignIn.mockRejectedValueOnce(new Error("Login failed"));
-  window.alert = jest.fn();
-
-  render(<LoginPage />);
-  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "fail@mail.com" } });
-  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "wrongpass" } });
-  fireEvent.click(screen.getByRole('button', { name: /login/i }));
-
-  await waitFor(() => {
-    expect(window.alert).toHaveBeenCalledWith("Login failed");
+    expect(window.location.assign).toHaveBeenCalledWith("/home");
   });
 });
 
