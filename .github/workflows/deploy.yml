@@ -1,19 +1,22 @@
-name: CD - Deploy to GCP Cloud Run
+name: CD - Deploy to Production
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI - Test"] 
+    types:
+      - completed
 
 jobs:
-  deploy:
+  deploy-production:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: unified-runner-461212-q5
       REGION: asia-southeast2
-      SERVICE: dooit-app-dummy
-      REPOSITORY: fp-pso-dummy # <--- nama repo docker-mu di Artifact Registry
+      SERVICE: dooit-app-dummy # nama production service
+      REPOSITORY: fp-pso-dummy
 
     steps:
       - name: Checkout repo
@@ -48,7 +51,7 @@ jobs:
             --tag asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
             --push .
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run Production
         run: |
           gcloud run deploy ${{ env.SERVICE }} \
             --image asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
