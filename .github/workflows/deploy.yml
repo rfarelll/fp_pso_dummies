@@ -1,19 +1,22 @@
-name: CD - Deploy to GCP Cloud Run
+name: CD - Deploy to Staging
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI - Test"] # atau CI - Lint, Test, Build sesuai workflow CI kamu
+    types:
+      - completed
 
 jobs:
-  deploy:
+  deploy-staging:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'dev'
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: unified-runner-461212-q5
       REGION: asia-southeast2
-      SERVICE: dooit-app-dummy
-      REPOSITORY: fp-pso-dummy # <--- nama repo docker-mu di Artifact Registry
+      SERVICE: dooit-staging # beda nama service dengan production!
+      REPOSITORY: fp-pso-dummy
 
     steps:
       - name: Checkout repo
@@ -38,17 +41,17 @@ jobs:
       - name: Build and Push Docker image with Buildx
         run: |
           docker buildx build \
-            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }} \
-            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ secrets.FIREBASE_MEASUREMENT_ID }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID_STAGING }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ secrets.FIREBASE_MEASUREMENT_ID_STAGING }} \
             --tag asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
             --push .
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run Staging
         run: |
           gcloud run deploy ${{ env.SERVICE }} \
             --image asia-southeast2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:latest \
