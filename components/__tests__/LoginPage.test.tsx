@@ -36,23 +36,13 @@ jest.mock("firebase/auth", () => ({
 
 const mockSignIn = signInWithEmailAndPassword as jest.Mock;
 
-// Mock window.location.href (tanpa assign window.location langsung)
-let href = "";
-beforeAll(() => {
-  Object.defineProperty(window, "location", {
-    writable: true,
-    value: { get href() { return href; }, set href(val) { href = val; } }
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+  // @ts-expect-error: mocking window.location in Jest test
+  delete window.location;
+  // @ts-expect-error: mocking window.location in Jest test
+  window.location = { href: "" };
 });
-afterAll(() => {
-  // Optional: reset kalau perlu
-});
-
-describe("LoginPage", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    href = ""; // reset before each test
-  });
 
   it("renders all input fields, button, and register link", () => {
     render(<LoginPage />);
@@ -119,4 +109,3 @@ describe("LoginPage", () => {
     // Selesaikan promise biar ga "pending" terus
     resolvePromise!();
   });
-});
