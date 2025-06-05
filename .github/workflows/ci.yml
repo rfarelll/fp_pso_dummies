@@ -1,13 +1,13 @@
-name: CI - Build & Test
+name: CI - Lint, Test, Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
     branches: [main]
 
 jobs:
-  build:
+  test:               
     runs-on: ubuntu-latest
 
     steps:
@@ -17,16 +17,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 18
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Ensure @types/react installed  # <--- ADD THIS!
-        run: npm install --save-dev @types/react @types/react-dom --legacy-peer-deps
-
       - name: Run Lint
         run: npm run lint
+
+      - name: Enable Babel for Jest
+        run: mv babel.config.js.bak babel.config.js
+
+      - name: Run Unit Tests
+        run: npm run test -- --coverage
+
+      - name: Disable Babel for Next.js build
+        run: mv babel.config.js babel.config.js.bak
 
       - name: Build Next.js
         run: npm run build

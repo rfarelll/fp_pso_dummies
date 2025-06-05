@@ -28,9 +28,9 @@ export default function LandingPage() {
             DooIT adalah aplikasi web sederhana yang membantu Anda melakukan konversi kurs mata uang
             dengan cepat, memantau saldo dalam berbagai mata uang, serta mengonversi saldo ke mata uang lain secara instan.
             Cocok untuk traveler, pekerja internasional, maupun siapa saja yang ingin mengelola keuangan lintas negara secara praktis dan efisien.
-            Semua fitur DooIT dapat diakses langsung tanpa instalasi, kapan saja dan di mana saja! 
+            Semua fitur DooIT dapat diakses langsung tanpa instalasi, kont kapan saja dan di mana saja!
           </p>
-        </div>
+        </div> 
         {/* Right - CTA */}
         <div className="w-full md:w-1/3 flex flex-col justify-center items-center gap-8 py-14 px-8 border-t md:border-t-0 md:border-l border-blue-200 bg-transparent">
           <Link href="/register" className="w-full flex justify-center">
